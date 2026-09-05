@@ -1,0 +1,24 @@
+# Node & package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Rust & Anchor build artifacts
+target/
+.anchor/
+*.so
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.secret
+*key*.json
+id.json
+id-*.json
+
+# OS files
+.DS_Store
+Thumbs.db
