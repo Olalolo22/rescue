@@ -2,7 +2,10 @@ use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
 use ephemeral_rollups_sdk::access_control::{
     instructions::CreateEphemeralPermissionCpi,
-    structs::{EphemeralMembersArgs, EphemeralPermission, PERMISSION_SEED},
+    structs::{
+        EphemeralMembersArgs, EphemeralPermission, Member, PERMISSION_SEED,
+        ACCOUNT_SIGNATURES_FLAG, AUTHORITY_FLAG, TX_BALANCES_FLAG, TX_LOGS_FLAG, TX_MESSAGE_FLAG,
+    },
 };
 use ephemeral_rollups_sdk::consts::{EPHEMERAL_VAULT_ID, MAGIC_PROGRAM_ID, PERMISSION_PROGRAM_ID};
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
@@ -103,11 +106,24 @@ pub mod probe {
         }
 
         let authority_key = ctx.accounts.authority.key();
+        let probe_bump = ctx.accounts.probe.bump;
         let signers = [
             PROBE_SEED,
             authority_key.as_ref(),
-            &[ctx.bumps.probe],
+            &[probe_bump],
         ];
+
+        let member_structs: Vec<Member> = members
+            .into_iter()
+            .map(|pubkey| Member {
+                flags: AUTHORITY_FLAG
+                    | TX_LOGS_FLAG
+                    | TX_BALANCES_FLAG
+                    | TX_MESSAGE_FLAG
+                    | ACCOUNT_SIGNATURES_FLAG,
+                pubkey,
+            })
+            .collect();
 
         CreateEphemeralPermissionCpi {
             payer: ctx.accounts.probe.to_account_info(),
@@ -118,7 +134,7 @@ pub mod probe {
             permission_program: ctx.accounts.permission_program.to_account_info(),
             args: EphemeralMembersArgs {
                 is_private,
-                members,
+                members: member_structs,
             },
         }
         .invoke_signed(&[&signers])?;
