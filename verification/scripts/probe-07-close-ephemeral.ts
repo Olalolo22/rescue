@@ -29,6 +29,7 @@ import {
   findProbePda,
   authorizeSigner,
   delegateProbeRaw,
+  delegateAccountRaw,
   TEE_VALIDATOR,
   DELEGATION_PROGRAM_ID,
 } from "./common";
@@ -96,8 +97,17 @@ export async function runProbe07(): Promise<Probe07Result> {
     TEE_VALIDATOR,
     baseProgram
   );
-  console.log("✅ Probe delegated to TEE validator, waiting 2.5s for ER sync...");
-  await new Promise((r) => setTimeout(r, 2500));
+
+  console.log("[step 0] Delegating authority account to TEE validator for ER fee payer mutation...");
+  await delegateAccountRaw(
+    baseConn,
+    mainPayer,  // main payer funds delegation buffer rent
+    authority,  // authority is delegated to TEE validator
+    SystemProgram.programId,
+    TEE_VALIDATOR
+  );
+  console.log("✅ Probe & authority delegated to TEE validator, waiting 3s for ER sync...");
+  await new Promise((r) => setTimeout(r, 3000));
 
   // 1. Authorize on TEE and get ER connection
   console.log("[step 1] Authorizing on TEE ER...");

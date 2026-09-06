@@ -4,6 +4,8 @@ import {
   Keypair,
   PublicKey,
   Transaction,
+  TransactionInstruction,
+  SystemProgram,
   VersionedTransaction,
   sendAndConfirmTransaction,
   LAMPORTS_PER_SOL,
@@ -275,6 +277,72 @@ export async function delegateProbeRaw(
     } as any)
     .signers(signers)
     .rpc();
+}
+
+// -----------------------------------------------------------------------------
+// Account Delegation Helper (for system/wallet accounts to allow ER state mutations)
+// -----------------------------------------------------------------------------
+
+export async function delegateAccountRaw(
+  connection: Connection,
+  payer: Keypair,
+  accountToDelegate: Keypair,
+  ownerProgram: PublicKey,
+  validator: PublicKey
+): Promise<string> {
+  const [buffer] = PublicKey.findProgramAddressSync(
+    [Buffer.from("buffer"), accountToDelegate.publicKey.toBuffer()],
+    ownerProgram
+  );
+  const [delegationRecord] = PublicKey.findProgramAddressSync(
+    [Buffer.from("delegation"), accountToDelegate.publicKey.toBuffer()],
+    DELEGATION_PROGRAM_ID
+  );
+  const [delegationMetadata] = PublicKey.findProgramAddressSync(
+    [Buffer.from("delegation-metadata"), accountToDelegate.publicKey.toBuffer()],
+    DELEGATION_PROGRAM_ID
+  );
+
+  const bufferData = Buffer.alloc(8 + 4 + 4 + 1 + 32);
+  bufferData.fill(0);
+  bufferData.writeUInt32LE(0xffffffff, 8); // commitFrequencyMs
+  bufferData.writeUInt32LE(0, 12); // seeds.length = 0
+  bufferData.writeUInt8(1, 16); // has validator
+  validator.toBuffer().copy(bufferData, 17);
+
+  const keys = [
+    { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+    { pubkey: accountToDelegate.publicKey, isSigner: true, isWritable: true },
+    { pubkey: ownerProgram, isSigner: false, isWritable: false },
+    { pubkey: buffer, isSigner: false, isWritable: true },
+    { pubkey: delegationRecord, isSigner: false, isWritable: true },
+    { pubkey: delegationMetadata, isSigner: false, isWritable: true },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ];
+
+  const tx = new Transaction();
+  if (ownerProgram.equals(SystemProgram.programId)) {
+    tx.add(
+      SystemProgram.assign({
+        accountPubkey: accountToDelegate.publicKey,
+        programId: DELEGATION_PROGRAM_ID,
+      })
+    );
+  }
+  tx.add(
+    new TransactionInstruction({
+      programId: DELEGATION_PROGRAM_ID,
+      keys,
+      data: bufferData,
+    })
+  );
+
+  const signers = [payer];
+  if (!payer.publicKey.equals(accountToDelegate.publicKey)) {
+    signers.push(accountToDelegate);
+  }
+
+  return sendAndConfirmTransaction(connection, tx, signers);
 }
 
 // -----------------------------------------------------------------------------
