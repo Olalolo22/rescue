@@ -154,16 +154,18 @@ export function loadKeypair(
     return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
   }
 
-  // Check solana default config
-  const solanaConfigKey = path.join(
-    process.env.HOME || "",
-    ".config",
-    "solana",
-    "id.json"
-  );
-  if (fs.existsSync(solanaConfigKey)) {
-    const raw = fs.readFileSync(solanaConfigKey, "utf-8");
-    return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
+  // Check solana default config only for authority, not stranger
+  if (envVar !== "STRANGER_KEYPAIR_PATH") {
+    const solanaConfigKey = path.join(
+      process.env.HOME || "",
+      ".config",
+      "solana",
+      "id.json"
+    );
+    if (fs.existsSync(solanaConfigKey)) {
+      const raw = fs.readFileSync(solanaConfigKey, "utf-8");
+      return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
+    }
   }
 
   // Fallback to local temporary key
@@ -266,7 +268,8 @@ export function getAnchorProgram(
   );
   if (fs.existsSync(idlPath)) {
     const idl = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
-    return new anchor.Program(idl, programId, provider);
+    idl.address = programId.toBase58();
+    return new anchor.Program(idl as any, provider);
   }
 
   // Fallback minimal IDL definition if target hasn't been built locally yet
@@ -377,5 +380,6 @@ export function getAnchorProgram(
     ],
   };
 
-  return new anchor.Program(minimalIdl, programId, provider);
+  (minimalIdl as any).address = programId.toBase58();
+  return new anchor.Program(minimalIdl as any, provider);
 }
