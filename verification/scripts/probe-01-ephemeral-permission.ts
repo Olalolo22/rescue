@@ -9,7 +9,14 @@
  * 2. Or if current TEE still fails / only persists 1 member (the bug Tenor hit).
  * 3. Whether stranger authorization token on TEE RPC receives `null` for private account.
  */
-import { Keypair, PublicKey } from "@solana/web3.js";
+import {
+  Keypair,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  sendAndConfirmTransaction,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 import {
   getBaseConnection,
   getErConnection,
@@ -41,11 +48,27 @@ export async function runProbe01(): Promise<Probe01Result> {
   console.log("=======================================================");
 
   const baseConn = getBaseConnection();
-  const authority = loadKeypair("AUTHORITY_KEYPAIR_PATH", "probe_auth.json");
+  const mainPayer = loadKeypair("AUTHORITY_KEYPAIR_PATH", "probe_auth.json");
   const stranger = loadKeypair("STRANGER_KEYPAIR_PATH", "probe_stranger.json");
+  const matcher = Keypair.generate();
 
-  console.log(`[authority] ${authority.publicKey.toBase58()}`);
-  console.log(`[stranger]  ${stranger.publicKey.toBase58()}`);
+  // Create fresh authority for this run to guarantee unpolluted state
+  const authority = Keypair.generate();
+  console.log(`[authority (fresh)]   ${authority.publicKey.toBase58()}`);
+  console.log(`[main payer]          ${mainPayer.publicKey.toBase58()}`);
+  console.log(`[matcher (member 2)]  ${matcher.publicKey.toBase58()}`);
+  console.log(`[stranger (outsider)] ${stranger.publicKey.toBase58()}`);
+
+  console.log("[step 0] Funding fresh authority with 0.05 SOL from main payer...");
+  const fundTx = new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: mainPayer.publicKey,
+      toPubkey: authority.publicKey,
+      lamports: 0.05 * LAMPORTS_PER_SOL,
+    })
+  );
+  await sendAndConfirmTransaction(baseConn, fundTx, [mainPayer]);
+  console.log("✅ Fresh authority funded");
 
   // 1. Verify TEE validator identity
   const idCheck = await verifyTeeIdentity();
@@ -142,13 +165,13 @@ export async function runProbe01(): Promise<Probe01Result> {
   const erProgram = getAnchorProgram(erConn, authWallet);
 
   // 5. Test multi-member EphemeralPermission initialization on TEE
-  console.log("[step 4] Testing 2-member EphemeralPermission initialization (authority + stranger)...");
+  console.log("[step 4] Testing 2-member EphemeralPermission initialization (authority + matcher)...");
   let multiMemberOk = false;
   let multiMemberError = "";
 
   try {
     const tx = await erProgram.methods
-      .initProbePermission(true, [authority.publicKey, stranger.publicKey])
+      .initProbePermission(true, [authority.publicKey, matcher.publicKey])
       .accounts({
         authority: authority.publicKey,
         probe: probePda,

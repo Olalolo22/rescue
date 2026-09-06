@@ -41,10 +41,20 @@ pub mod probe {
         probe.bump = ctx.bumps.probe;
 
         if extra_rent_members > 0 {
-            // Pre-fund rent for EphemeralPermission sizing (e.g. 1 or 2 members)
+            // Pre-fund rent for EphemeralPermission sizing (e.g. 1 or 2 members) + 10M lamports buffer
             let rent_lamports = ephemeral_rollups_sdk::ephemeral_accounts::rent(
                 EphemeralPermission::size_of(extra_rent_members as usize) as u32,
-            );
+            ) + 10_000_000;
+            anchor_lang::system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer {
+                        from: ctx.accounts.payer.to_account_info(),
+                        to: ctx.accounts.probe.to_account_info(),
+                    },
+                ),
+                rent_lamports,
+            )?;
             msg!(
                 "Pre-funded {} lamports for {} member permission",
                 rent_lamports,
