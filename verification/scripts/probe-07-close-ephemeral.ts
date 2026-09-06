@@ -11,7 +11,14 @@
  * 4. Verifies the account is purged from TEE ER and leaves ZERO trace on Solana base layer.
  */
 import * as anchor from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import {
+  Keypair,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  sendAndConfirmTransaction,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 import {
   getBaseConnection,
   getErConnection,
@@ -41,44 +48,56 @@ export async function runProbe07(): Promise<Probe07Result> {
   console.log("=======================================================");
 
   const baseConn = getBaseConnection();
-  const authority = loadKeypair("AUTHORITY_KEYPAIR_PATH", "probe_auth.json");
+  const mainPayer = loadKeypair("AUTHORITY_KEYPAIR_PATH", "probe_auth.json");
+
+  // Create fresh authority for this run to guarantee unpolluted state on TEE ER
+  const authority = Keypair.generate();
   const authWallet = createWallet(authority);
   const baseProgram = getAnchorProgram(baseConn, authWallet);
 
   const [probePda] = findProbePda(authority.publicKey);
   const [itemPda] = findEphemeralPda(authority.publicKey);
+  console.log(`[authority (fresh)]   ${authority.publicKey.toBase58()}`);
+  console.log(`[main payer]          ${mainPayer.publicKey.toBase58()}`);
   console.log(`[probePda]          ${probePda.toBase58()}`);
   console.log(`[ephemeralItemPda]  ${itemPda.toBase58()}`);
 
-  // 0. Ensure delegated session account exists on base and is delegated
-  let info = await baseConn.getAccountInfo(probePda);
-  if (!info) {
-    console.log("[step 0] Initializing probe account on base...");
-    await baseProgram.methods
-      .initializeProbe(0)
-      .accounts({
-        payer: authority.publicKey,
-        authority: authority.publicKey,
-        probe: probePda,
-        systemProgram: PublicKey.default,
-      })
-      .rpc();
-    info = await baseConn.getAccountInfo(probePda);
-  }
+  // 0. Fund fresh authority with SOL on base layer
+  console.log("[step 0] Funding fresh authority with 0.05 SOL from main payer...");
+  const fundTx = new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: mainPayer.publicKey,
+      toPubkey: authority.publicKey,
+      lamports: 0.05 * LAMPORTS_PER_SOL,
+    })
+  );
+  await sendAndConfirmTransaction(baseConn, fundTx, [mainPayer]);
+  console.log("✅ Fresh authority funded");
 
-  if (info?.owner.toBase58() !== DELEGATION_PROGRAM_ID.toBase58()) {
-    console.log("[step 0] Delegating probe account to anchor ER session...");
-    await baseProgram.methods
-      .delegateProbe()
-      .accounts({
-        payer: authority.publicKey,
-        authority: authority.publicKey,
-        probe: probePda,
-        validator: TEE_VALIDATOR,
-      })
-      .rpc();
-    await new Promise((r) => setTimeout(r, 2500));
-  }
+  // 0b. Initialize fresh probe account on base and delegate to TEE validator
+  console.log("[step 0] Initializing probe account on base...");
+  await baseProgram.methods
+    .initializeProbe(0)
+    .accounts({
+      payer: authority.publicKey,
+      authority: authority.publicKey,
+      probe: probePda,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+
+  console.log("[step 0] Delegating probe account to anchor ER session...");
+  await baseProgram.methods
+    .delegateProbe()
+    .accounts({
+      payer: authority.publicKey,
+      authority: authority.publicKey,
+      probe: probePda,
+      validator: TEE_VALIDATOR,
+    })
+    .rpc();
+  console.log("✅ Probe delegated to TEE validator, waiting 2.5s for ER sync...");
+  await new Promise((r) => setTimeout(r, 2500));
 
   // 1. Authorize on TEE and get ER connection
   console.log("[step 1] Authorizing on TEE ER...");
@@ -94,7 +113,7 @@ export async function runProbe07(): Promise<Probe07Result> {
       .accounts({
         authority: authority.publicKey,
         item: itemPda,
-        systemProgram: PublicKey.default,
+        systemProgram: SystemProgram.programId,
       })
       .remainingAccounts([
         { pubkey: probePda, isWritable: true, isSigner: false },
@@ -102,14 +121,15 @@ export async function runProbe07(): Promise<Probe07Result> {
       .rpc({ skipPreflight: true });
     console.log(`✅ Ephemeral item created on ER. tx: ${tx}`);
   } catch (e: any) {
-    console.error("❌ Failed to create ephemeral item on ER:", e.message || e);
+    const errText = e.logs ? `${e.message || e}\nLogs: ${e.logs.join("\n")}` : (e.message || String(e));
+    console.error("❌ Failed to create ephemeral item on ER:", errText);
     return {
       probeName: "Probe 07: Ephemeral Cleanup",
       createdOnEr: false,
       neverExistedOnBase: false,
       closedOnEr: false,
       zeroFootprintOnBase: false,
-      details: `Failed to create ephemeral item on ER: ${e.message}`,
+      details: `Failed to create ephemeral item on ER: ${errText}`,
       verdict: "FAIL",
     };
   }
@@ -141,14 +161,15 @@ export async function runProbe07(): Promise<Probe07Result> {
       .rpc({ skipPreflight: true });
     console.log(`✅ Ephemeral item closed on ER. tx: ${closeTx}`);
   } catch (e: any) {
-    console.error("❌ Failed to close ephemeral item on ER:", e.message || e);
+    const errText = e.logs ? `${e.message || e}\nLogs: ${e.logs.join("\n")}` : (e.message || String(e));
+    console.error("❌ Failed to close ephemeral item on ER:", errText);
     return {
       probeName: "Probe 07: Ephemeral Cleanup",
       createdOnEr: existsOnEr,
       neverExistedOnBase,
       closedOnEr: false,
       zeroFootprintOnBase: false,
-      details: `Failed to close ephemeral item: ${e.message}`,
+      details: `Failed to close ephemeral item: ${errText}`,
       verdict: "FAIL",
     };
   }
