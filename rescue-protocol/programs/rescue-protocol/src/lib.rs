@@ -7,7 +7,7 @@ pub mod math;
 pub mod state;
 
 pub use errors::*;
-pub use instructions::*;
+use instructions::*;
 pub use math::*;
 pub use state::*;
 

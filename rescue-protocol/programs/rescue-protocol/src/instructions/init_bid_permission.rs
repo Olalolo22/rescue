@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::access_control::{
     instructions::CreateEphemeralPermissionCpi,
     structs::{
-        EphemeralMembersArgs, EphemeralPermission, Member,
+        EphemeralMembersArgs, Member,
         ACCOUNT_SIGNATURES_FLAG, AUTHORITY_FLAG, TX_BALANCES_FLAG, TX_LOGS_FLAG, TX_MESSAGE_FLAG,
     },
 };

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::anchor::commit;
-use ephemeral_rollups_sdk::ephem::MagicIntentBundleBuilder;
+use ephemeral_rollups_sdk::ephem::{FoldableIntentBuilder, MagicIntentBundleBuilder};
 
 #[commit]
 #[derive(Accounts)]
