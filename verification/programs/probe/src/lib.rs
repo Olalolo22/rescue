@@ -47,7 +47,7 @@ pub mod probe {
             ) + 10_000_000;
             anchor_lang::system_program::transfer(
                 CpiContext::new(
-                    ctx.accounts.system_program.to_account_info(),
+                    ctx.accounts.system_program.key(),
                     anchor_lang::system_program::Transfer {
                         from: ctx.accounts.payer.to_account_info(),
                         to: ctx.accounts.probe.to_account_info(),
