@@ -70,4 +70,7 @@ pub enum RescueError {
 
     #[msg("Invalid oracle price feed data.")]
     InvalidOraclePrice,
+
+    #[msg("Caller is not authorized to read or mutate this private ER auction state (6013).")]
+    CrossReadDenied,
 }

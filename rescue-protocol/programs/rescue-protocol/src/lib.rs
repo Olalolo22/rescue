@@ -18,6 +18,10 @@ declare_id!("GCcUbgthDu323rfq9Z3iWNFR632wXWMZ66KKtdTtxDBT");
 pub mod rescue_protocol {
     use super::*;
 
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Milestone 1: Host Lending Program & Governance
+    // ─────────────────────────────────────────────────────────────────────────
+
     /// Initialize global governance parameters (RescueConfigPDA).
     pub fn init_config(
         ctx: Context<InitConfig>,
@@ -108,5 +112,34 @@ pub mod rescue_protocol {
     /// Standard public liquidation path (only callable when position is Liquidatable).
     pub fn liquidate(ctx: Context<Liquidate>, repay_debt_amount: u64, current_price: i64) -> Result<()> {
         instructions::liquidate::liquidate(ctx, repay_debt_amount, current_price)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Milestone 2: ER Auction Engine & Sealed Bidding (Executed on TEE ER)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// Initialize private EphemeralPermission on TEE for confidential bids.
+    pub fn init_bid_permission(ctx: Context<InitBidPermission>, members: Vec<Pubkey>) -> Result<()> {
+        instructions::init_bid_permission::init_bid_permission(ctx, members)
+    }
+
+    /// Submit a sealed reverse-auction bid inside the TEE ER.
+    pub fn submit_bid(ctx: Context<SubmitBid>, penalty_bps: u16, bond_committed: u64) -> Result<()> {
+        instructions::submit_bid::submit_bid(ctx, penalty_bps, bond_committed)
+    }
+
+    /// Close the auction window on TEE ER and record winning penalty and match price.
+    pub fn close_window(ctx: Context<CloseWindow>, current_price: i64) -> Result<()> {
+        instructions::close_window::close_window(ctx, current_price)
+    }
+
+    /// Probe cross-read security check: Asserts unauthorized readers receive Error 6013.
+    pub fn probe_cross_read(ctx: Context<ProbeCrossRead>) -> Result<()> {
+        instructions::probe_cross_read::probe_cross_read(ctx)
+    }
+
+    /// Program CPI undelegate: Commits TEE state back to base Solana layer.
+    pub fn undelegate_position(ctx: Context<UndelegatePosition>) -> Result<()> {
+        instructions::undelegate_position::undelegate_position(ctx)
     }
 }
