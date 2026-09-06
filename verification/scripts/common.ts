@@ -44,7 +44,8 @@ export const TEE_VALIDATOR = new PublicKey(
 );
 
 export const DELEGATION_PROGRAM_ID = new PublicKey(
-  "DELeGATE7qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+  process.env.DELEGATION_PROGRAM_ID ||
+    "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
 );
 
 export const PROBE_PROGRAM_ID = new PublicKey(
