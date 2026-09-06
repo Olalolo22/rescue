@@ -35,6 +35,11 @@ pub mod probe {
     /// 1. Initialize a base ProbeAccount PDA.
     /// Can allocate extra lamports for EphemeralPermission rent on ER if needed.
     pub fn initialize_probe(ctx: Context<InitializeProbe>, extra_rent_members: u8) -> Result<()> {
+        // Capture account infos BEFORE the mutable borrow to avoid E0502
+        let probe_account_info = ctx.accounts.probe.to_account_info();
+        let payer_account_info = ctx.accounts.payer.to_account_info();
+        let system_program_info = ctx.accounts.system_program.to_account_info();
+
         let probe = &mut ctx.accounts.probe;
         probe.authority = ctx.accounts.authority.key();
         probe.counter = 0;
@@ -47,10 +52,10 @@ pub mod probe {
             ) + 10_000_000;
             anchor_lang::system_program::transfer(
                 CpiContext::new(
-                    ctx.accounts.system_program.key(),
+                    system_program_info,
                     anchor_lang::system_program::Transfer {
-                        from: ctx.accounts.payer.to_account_info(),
-                        to: ctx.accounts.probe.to_account_info(),
+                        from: payer_account_info,
+                        to: probe_account_info,
                     },
                 ),
                 rent_lamports,
