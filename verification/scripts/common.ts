@@ -280,50 +280,55 @@ export function getAnchorProgram(
     instructions: [
       {
         name: "initializeProbe",
+        discriminator: [182, 94, 156, 201, 68, 48, 111, 224],
         accounts: [
-          { name: "payer", isMut: true, isSigner: true },
-          { name: "authority", isMut: false, isSigner: true },
-          { name: "probe", isMut: true, isSigner: false },
-          { name: "systemProgram", isMut: false, isSigner: false },
+          { name: "payer", writable: true, signer: true, isMut: true, isSigner: true },
+          { name: "authority", writable: false, signer: true, isMut: false, isSigner: true },
+          { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "systemProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [{ name: "extraRentMembers", type: "u8" }],
       },
       {
         name: "delegateProbe",
+        discriminator: [219, 98, 51, 77, 21, 218, 151, 164],
         accounts: [
-          { name: "payer", isMut: true, isSigner: true },
-          { name: "authority", isMut: false, isSigner: true },
-          { name: "probe", isMut: true, isSigner: false },
-          { name: "validator", isMut: false, isSigner: false, isOptional: true },
+          { name: "payer", writable: true, signer: true, isMut: true, isSigner: true },
+          { name: "authority", writable: false, signer: true, isMut: false, isSigner: true },
+          { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "validator", writable: false, signer: false, isMut: false, isSigner: false, optional: true, isOptional: true },
         ],
         args: [],
       },
       {
         name: "mutateProbe",
+        discriminator: [227, 158, 174, 0, 133, 255, 167, 140],
         accounts: [
-          { name: "authority", isMut: false, isSigner: true },
-          { name: "probe", isMut: true, isSigner: false },
+          { name: "authority", writable: false, signer: true, isMut: false, isSigner: true },
+          { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
         ],
         args: [{ name: "increment", type: "u64" }],
       },
       {
         name: "liquidateProbe",
+        discriminator: [58, 121, 24, 92, 92, 127, 237, 27],
         accounts: [
-          { name: "liquidator", isMut: false, isSigner: true },
-          { name: "authority", isMut: false, isSigner: false },
-          { name: "probe", isMut: true, isSigner: false },
+          { name: "liquidator", writable: false, signer: true, isMut: false, isSigner: true },
+          { name: "authority", writable: false, signer: false, isMut: false, isSigner: false },
+          { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
         ],
         args: [],
       },
       {
         name: "initProbePermission",
+        discriminator: [252, 22, 128, 219, 141, 29, 119, 184],
         accounts: [
-          { name: "authority", isMut: true, isSigner: true },
-          { name: "probe", isMut: true, isSigner: false },
-          { name: "permission", isMut: true, isSigner: false },
-          { name: "ephemeralVault", isMut: true, isSigner: false },
-          { name: "magicProgram", isMut: false, isSigner: false },
-          { name: "permissionProgram", isMut: false, isSigner: false },
+          { name: "authority", writable: true, signer: true, isMut: true, isSigner: true },
+          { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "permission", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "ephemeralVault", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "magicProgram", writable: false, signer: false, isMut: false, isSigner: false },
+          { name: "permissionProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [
           { name: "isPrivate", type: "bool" },
@@ -332,36 +337,40 @@ export function getAnchorProgram(
       },
       {
         name: "probeCrossRead",
+        discriminator: [82, 223, 14, 174, 105, 156, 125, 20],
         accounts: [
-          { name: "reader", isMut: false, isSigner: true },
-          { name: "probe", isMut: false, isSigner: false },
+          { name: "reader", writable: false, signer: true, isMut: false, isSigner: true },
+          { name: "probe", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [],
       },
       {
         name: "undelegateProbe",
+        discriminator: [102, 234, 184, 238, 155, 204, 55, 244],
         accounts: [
-          { name: "payer", isMut: true, isSigner: true },
-          { name: "probe", isMut: true, isSigner: false },
-          { name: "magicContext", isMut: true, isSigner: false },
-          { name: "magicProgram", isMut: false, isSigner: false },
+          { name: "payer", writable: true, signer: true, isMut: true, isSigner: true },
+          { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "magicContext", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "magicProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [],
       },
       {
         name: "createEphemeralItem",
+        discriminator: [133, 182, 238, 134, 55, 116, 99, 177],
         accounts: [
-          { name: "authority", isMut: true, isSigner: true },
-          { name: "item", isMut: true, isSigner: false },
-          { name: "systemProgram", isMut: false, isSigner: false },
+          { name: "authority", writable: true, signer: true, isMut: true, isSigner: true },
+          { name: "item", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "systemProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [{ name: "data", type: "u64" }],
       },
       {
         name: "closeEphemeralItem",
+        discriminator: [59, 22, 246, 55, 41, 253, 93, 69],
         accounts: [
-          { name: "authority", isMut: true, isSigner: true },
-          { name: "item", isMut: true, isSigner: false },
+          { name: "authority", writable: true, signer: true, isMut: true, isSigner: true },
+          { name: "item", writable: true, signer: false, isMut: true, isSigner: false },
         ],
         args: [],
       },
@@ -369,11 +378,32 @@ export function getAnchorProgram(
     accounts: [
       {
         name: "ProbeAccount",
+        discriminator: [224, 127, 221, 245, 147, 179, 144, 243],
+      },
+      {
+        name: "EphemeralItemAccount",
+        discriminator: [208, 156, 95, 98, 13, 36, 240, 189],
+      },
+    ],
+    types: [
+      {
+        name: "ProbeAccount",
         type: {
           kind: "struct",
           fields: [
             { name: "authority", type: "pubkey" },
             { name: "counter", type: "u64" },
+            { name: "bump", type: "u8" },
+          ],
+        },
+      },
+      {
+        name: "EphemeralItemAccount",
+        type: {
+          kind: "struct",
+          fields: [
+            { name: "authority", type: "pubkey" },
+            { name: "data", type: "u64" },
             { name: "bump", type: "u8" },
           ],
         },
