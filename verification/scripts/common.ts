@@ -327,7 +327,7 @@ export function getAnchorProgram(
         ],
         args: [
           { name: "isPrivate", type: "bool" },
-          { name: "members", type: { vec: "publicKey" } },
+          { name: "members", type: { vec: "pubkey" } },
         ],
       },
       {
@@ -372,7 +372,7 @@ export function getAnchorProgram(
         type: {
           kind: "struct",
           fields: [
-            { name: "authority", type: "publicKey" },
+            { name: "authority", type: "pubkey" },
             { name: "counter", type: "u64" },
             { name: "bump", type: "u8" },
           ],
