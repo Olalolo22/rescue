@@ -25,6 +25,8 @@ import {
   TEE_VALIDATOR,
   PROBE_PROGRAM_ID,
   DELEGATION_PROGRAM_ID,
+  MAGIC_CONTEXT_ID,
+  MAGIC_PROGRAM_ID,
 } from "./common";
 
 export interface Probe05Result {
@@ -78,8 +80,8 @@ export async function runProbe05(): Promise<Probe05Result> {
       .accounts({
         payer: authority.publicKey,
         probe: probePda,
-        magicContext: PublicKey.default,
-        magicProgram: PublicKey.default,
+        magicContext: MAGIC_CONTEXT_ID,
+        magicProgram: MAGIC_PROGRAM_ID,
       })
       .rpc();
 
