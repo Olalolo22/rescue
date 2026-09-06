@@ -12,7 +12,13 @@
  *    by the runtime with error 3007 (`AccountOwnedByWrongProgram`).
  * 4. Confirms that no base-layer MEV bot can front-run or steal collateral while delegated.
  */
-import { PublicKey } from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  sendAndConfirmTransaction,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 import {
   getBaseConnection,
   loadKeypair,
@@ -44,6 +50,21 @@ export async function runProbe06(): Promise<Probe06Result> {
 
   console.log(`[victim position authority] ${authority.publicKey.toBase58()}`);
   console.log(`[adversarial MEV searcher]  ${mevBot.publicKey.toBase58()}`);
+
+  // Ensure MEV Bot has gas to send the liquidation attempt transaction
+  const botBal = await baseConn.getBalance(mevBot.publicKey);
+  if (botBal < 0.01 * LAMPORTS_PER_SOL) {
+    console.log("[step 0] Funding MEV searcher with 0.02 SOL for transaction gas...");
+    const fundTx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: authority.publicKey,
+        toPubkey: mevBot.publicKey,
+        lamports: 0.02 * LAMPORTS_PER_SOL,
+      })
+    );
+    await sendAndConfirmTransaction(baseConn, fundTx, [authority]);
+    console.log("✅ MEV searcher funded with gas");
+  }
 
   const authWallet = createWallet(authority);
   const botWallet = createWallet(mevBot);
