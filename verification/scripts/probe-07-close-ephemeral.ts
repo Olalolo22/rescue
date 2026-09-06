@@ -19,7 +19,10 @@ import {
   createWallet,
   getAnchorProgram,
   findEphemeralPda,
+  findProbePda,
   authorizeSigner,
+  TEE_VALIDATOR,
+  DELEGATION_PROGRAM_ID,
 } from "./common";
 
 export interface Probe07Result {
@@ -40,9 +43,42 @@ export async function runProbe07(): Promise<Probe07Result> {
   const baseConn = getBaseConnection();
   const authority = loadKeypair("AUTHORITY_KEYPAIR_PATH", "probe_auth.json");
   const authWallet = createWallet(authority);
+  const baseProgram = getAnchorProgram(baseConn, authWallet);
 
+  const [probePda] = findProbePda(authority.publicKey);
   const [itemPda] = findEphemeralPda(authority.publicKey);
-  console.log(`[ephemeralItemPda] ${itemPda.toBase58()}`);
+  console.log(`[probePda]          ${probePda.toBase58()}`);
+  console.log(`[ephemeralItemPda]  ${itemPda.toBase58()}`);
+
+  // 0. Ensure delegated session account exists on base and is delegated
+  let info = await baseConn.getAccountInfo(probePda);
+  if (!info) {
+    console.log("[step 0] Initializing probe account on base...");
+    await baseProgram.methods
+      .initializeProbe(0)
+      .accounts({
+        payer: authority.publicKey,
+        authority: authority.publicKey,
+        probe: probePda,
+        systemProgram: PublicKey.default,
+      })
+      .rpc();
+    info = await baseConn.getAccountInfo(probePda);
+  }
+
+  if (info?.owner.toBase58() !== DELEGATION_PROGRAM_ID.toBase58()) {
+    console.log("[step 0] Delegating probe account to anchor ER session...");
+    await baseProgram.methods
+      .delegateProbe()
+      .accounts({
+        payer: authority.publicKey,
+        authority: authority.publicKey,
+        probe: probePda,
+        validator: TEE_VALIDATOR,
+      })
+      .rpc();
+    await new Promise((r) => setTimeout(r, 2500));
+  }
 
   // 1. Authorize on TEE and get ER connection
   console.log("[step 1] Authorizing on TEE ER...");
@@ -60,6 +96,9 @@ export async function runProbe07(): Promise<Probe07Result> {
         item: itemPda,
         systemProgram: PublicKey.default,
       })
+      .remainingAccounts([
+        { pubkey: probePda, isWritable: true, isSigner: false },
+      ])
       .rpc();
     console.log(`✅ Ephemeral item created on ER. tx: ${tx}`);
   } catch (e: any) {
@@ -96,6 +135,9 @@ export async function runProbe07(): Promise<Probe07Result> {
         authority: authority.publicKey,
         item: itemPda,
       })
+      .remainingAccounts([
+        { pubkey: probePda, isWritable: true, isSigner: false },
+      ])
       .rpc();
     console.log(`✅ Ephemeral item closed on ER. tx: ${closeTx}`);
   } catch (e: any) {
