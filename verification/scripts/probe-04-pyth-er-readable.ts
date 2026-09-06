@@ -81,7 +81,7 @@ export async function runProbe04(): Promise<Probe04Result> {
     console.error("❌ Failed to get TEE auth token:", e.message || e);
     return {
       probeName: "Probe 04: Pyth ER Readability",
-      feedAccount: PYTH_FEED_DEVNET.toBase58(),
+      feedAccount: feedAccount.toBase58(),
       existsOnBase: true,
       existsOnEr: false,
       baseDataLen: baseInfo.data.length,
@@ -95,14 +95,14 @@ export async function runProbe04(): Promise<Probe04Result> {
 
   // 3. Fetch PriceUpdateV2 from TEE ER
   console.log("[step 3] Fetching PriceUpdateV2 account from TEE ER...");
-  const erInfo = await erConn.getAccountInfo(PYTH_FEED_DEVNET);
+  const erInfo = await erConn.getAccountInfo(feedAccount);
 
   if (!erInfo) {
     console.warn("⚠️ Price feed account not visible on TEE ER RPC.");
     console.log("Note: MagicBlock ER mirrors PriceUpdateV2 once transactions touch it or sync is called.");
     return {
       probeName: "Probe 04: Pyth ER Readability",
-      feedAccount: PYTH_FEED_DEVNET.toBase58(),
+      feedAccount: feedAccount.toBase58(),
       existsOnBase: true,
       existsOnEr: false,
       baseDataLen: baseInfo.data.length,
@@ -120,7 +120,7 @@ export async function runProbe04(): Promise<Probe04Result> {
 
   return {
     probeName: "Probe 04: Pyth ER Readability",
-    feedAccount: PYTH_FEED_DEVNET.toBase58(),
+    feedAccount: feedAccount.toBase58(),
     existsOnBase: true,
     existsOnEr: true,
     baseDataLen: baseInfo.data.length,
