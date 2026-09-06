@@ -142,4 +142,18 @@ pub mod rescue_protocol {
     pub fn undelegate_position(ctx: Context<UndelegatePosition>) -> Result<()> {
         instructions::undelegate_position::undelegate_position(ctx)
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Milestone 3: Atomic L1 Settlement & Eviction Protocol (Executed on Solana L1)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// Finalize rescue on Solana L1: Atomic debt repayment, collateral transfer, and audit record.
+    pub fn finalize_rescue(ctx: Context<FinalizeRescue>, current_price: i64) -> Result<()> {
+        instructions::finalize_rescue::finalize_rescue(ctx, current_price)
+    }
+
+    /// Force eviction on Solana L1: Fail-open escape hatch callable past the hard cutoff.
+    pub fn force_evict(ctx: Context<ForceEvict>) -> Result<()> {
+        instructions::force_evict::force_evict(ctx)
+    }
 }
