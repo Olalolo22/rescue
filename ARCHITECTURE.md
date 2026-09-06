@@ -724,3 +724,96 @@ When this document is shared with GPT or any reviewer, their job is to attack ev
 4. **Find any place where we claim MagicBlock does something the core team has not explicitly confirmed.** Flag it.
 
 Any claim not labeled [VERIFIED] is a liability until Milestone 0 verification probes are run.
+
+---
+
+## 20. Architecture Attack Final Verdict
+
+> **Status:** Architecture attack COMPLETE. Milestone 0 verification probes ran 7/7 green on live devnet.
+> This section records the final settled invariant classification agreed upon after multi-round adversarial review (Grok + ChatGPT). No new mechanisms are permitted without restarting this section.
+
+---
+
+### Protocol Identity (Settled)
+
+Rescue is an **Ephemeral Competitive Liquidation-Intervention Layer**.
+
+It is NOT:
+- A multi-period debt restructuring facility (no junior notes, no maturity extensions)
+- A Chapter 11 analogue (no creditor committees, no court stay)
+- A guarantee of competitive auction outcomes
+
+It IS:
+- A 60-second sealed-bid reverse auction on the liquidation penalty
+- A mechanism guaranteeing the borrower is **never worse off** than public liquidation
+- An MEV exclusivity window enforced by Solana's account-ownership runtime invariant
+- A fail-open system that always resolves to standard liquidation if the private market fails
+
+---
+
+### 🔒 Proven Invariants (Implementation Must Not Violate)
+
+| # | Invariant | Enforcement |
+|:---:|---|---|
+| **I1** | **Non-Worseness:** Rescue outcome ≤ public liquidation penalty in every reachable state | Hard cap: `P_reserve = P_public - 150 bps`. Auction reverts if no bid ≤ P_reserve. |
+| **I2** | **Minimal Right-Sizing:** Only the exact minimum debt to reach HF ≥ 1.20 is repaid | Deterministic closed form: `R_min = ceil((HF* × D0 - C0 × p × LT) / (HF* - (1+P) × LT))` |
+| **I3** | **Anti-Phantom:** All bids are backed by real capital commitment | Session key linked to L1 slashing bond = `max(100 USDC, R_min × 2%)` |
+| **I4** | **Atomic Settlement:** Repayment and collateral transfer are a single atomic L1 transaction | `finalize_rescue` validates delivery before releasing collateral; source of capital is irrelevant to protocol |
+| **I5** | **One-Way Terminal States:** Timed-out positions never re-enter INTERVENTION_ZONE | `require!(position.state != Liquidatable, RescueError::TerminalState)` |
+| **I6** | **Post-Rescue Cooldown:** Successfully rescued positions cannot re-enter for 7,200 slots (~1hr) | `require!(clock.slot >= position.last_rescue_slot + COOLDOWN_SLOTS)` |
+| **I7** | **Deterministic Eviction:** `finalize_rescue` and `force_evict` operate on disjoint slot intervals | `finalize`: valid if `slot < hard_cutoff_slot`. `force_evict`: valid if `slot >= hard_cutoff_slot`. |
+| **I8** | **Oracle Drift Guard:** Price drift between TEE match and L1 finalize is bounded | Abort if `p_L1 / p_match < 98.5%`. Always re-check `HF >= 1.20` with live L1 Pyth price on finalize. |
+| **I9** | **Fail-Open Liveness:** MagicBlock unavailability cannot strand positions permanently | After `eviction_ts`, `force_evict` callable by anyone on L1; position → LIQUIDATABLE. |
+| **I10** | **MEV Exclusion:** Base layer liquidation is blocked while PositionPDA is delegated | Solana account-ownership runtime invariant: Error 3007 on all instructions expecting `PositionPDA.owner == RESCUE_PROGRAM_ID`. `[VERIFIED: Probe 03 & 06]` |
+
+---
+
+### 🟡 Parameterized Assumptions (Tunable; Not Theorems)
+
+| Parameter | Initial Value | Why It May Need Tuning |
+|---|:---:|---|
+| `P_reserve` spread vs public penalty | 150 bps | Must be recalibrated if target lending protocol penalty changes |
+| Bond as % of `R_min` | 2% | Bond adequacy depends on realized net capture in public liquidations |
+| Max intra-window price drift | 1.5% | Depends on oracle update frequency and volatility regime |
+| Rescue window duration | ~60s (150 slots) | Trade-off: competition vs. price-movement risk |
+| Settlement exclusive window | ~12s (30 slots) | Must exceed worst-case JIT flash-loan settlement time |
+| Runner-up window | ~8s (20 slots) | Must be nonzero but short to minimize position limbo |
+| Target HF post-rescue | 1.20 | Protocol-specific; should match the host lending protocol's safe zone |
+| Cooldown after rescue | 7,200 slots (~1hr) | Anti-oscillation; empirically determined |
+
+> **Governance note:** All parameterized values above should be stored in `RescueConfigPDA` and updateable via a governance instruction, never hardcoded in program logic.
+
+---
+
+### 🟠 Known Economic Residuals (Documented; Not Design Failures)
+
+1. **Repeated-game cartel surplus extraction:** A cartel can coordinate to bid at exactly `P_reserve`, capturing the borrower's minimum 1.5% surplus rather than full competitive savings. The invariant prevents harm; it does not force competitive equilibrium. Mitigation: low technical barriers + micro-bond model maximizes bidder set.
+
+2. **Bond heuristic adequacy:** The 2% bond is a starting calibration. Empirical validation against realized public liquidation net-capture rates needed before mainnet.
+
+3. **Single-asset model:** `R_min` formula is derived for one collateral / one debt asset. Multi-collateral positions require a generalized solver. MVP is scoped to single-market pairs only.
+
+4. **JIT execution complexity:** Flash-loan + atomic settlement increases the finalization transaction's computational surface. Must be profiled for Solana compute unit limits.
+
+---
+
+### Architecture Attack Chronology
+
+| Round | Attacker | Verdict |
+|:---:|---|---|
+| 1 | Grok (initial) | 8 attack vectors identified; incentive gap, timeout race, phantom bids flagged as critical |
+| 2 | Antigravity → Grok | Junior note → Atomic reverse-penalty auction. Phantom bids → micro-bond. Griefing → one-way timeout. |
+| 3 | Grok counter | Bertrand trap overclaimed. Capital lock residual. Trust boundary precision required. |
+| 4 | Antigravity → Grok + ChatGPT | 6 formal invariants specified. `P_reserve` non-worseness. `R_min` closed form. Bond formula. Disjoint eviction slots. |
+| 5 | Grok + ChatGPT joint | `P_reserve` conceded as strongest addition. Collusion bounded not eliminated. Bond heuristic not theorem. Multi-asset gap noted. **Green light for implementation.** |
+
+**Grok's exact words:** *"It is ready for careful implementation and formal verification of the on-chain arithmetic and state machine."*
+
+**ChatGPT's exact words:** *"The architecture has survived adversarial review sufficiently to justify writing the damn code."*
+
+---
+
+> **PHASE 1 (Architecture Attack): COMPLETE**
+> **PHASE 2 (Implementation): BEGIN at Milestone 1**
+>
+> The next enemy is Rust.
