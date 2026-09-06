@@ -12,7 +12,7 @@ use ephemeral_rollups_sdk::cpi::DelegateConfig;
 use ephemeral_rollups_sdk::ephem::MagicIntentBundleBuilder;
 use ephemeral_rollups_sdk::id as dlp_id;
 
-declare_id!("Probe11111111111111111111111111111111111111");
+declare_id!("ZnDqdjHjR1HuwyMehcfEGrxCt6QiCz58UW21VjbnGjf");
 
 pub const PROBE_SEED: &[u8] = b"probe";
 pub const EPHEMERAL_SEED: &[u8] = b"ephemeral_item";

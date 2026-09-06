@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-probe = "Probe11111111111111111111111111111111111111"
+probe = "ZnDqdjHjR1HuwyMehcfEGrxCt6QiCz58UW21VjbnGjf"
 
 [programs.localnet]
-probe = "Probe11111111111111111111111111111111111111"
+probe = "ZnDqdjHjR1HuwyMehcfEGrxCt6QiCz58UW21VjbnGjf"
 
 [provider]
 cluster = "devnet"

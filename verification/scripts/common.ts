@@ -48,7 +48,7 @@ export const DELEGATION_PROGRAM_ID = new PublicKey(
 );
 
 export const PROBE_PROGRAM_ID = new PublicKey(
-  process.env.PROBE_PROGRAM_ID || "Probe11111111111111111111111111111111111111"
+  process.env.PROBE_PROGRAM_ID || "ZnDqdjHjR1HuwyMehcfEGrxCt6QiCz58UW21VjbnGjf"
 );
 
 export const PYTH_FEED_DEVNET = new PublicKey(
