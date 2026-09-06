@@ -26,6 +26,7 @@ import {
   getAnchorProgram,
   findProbePda,
   TEE_VALIDATOR,
+  delegateProbeRaw,
   PROBE_PROGRAM_ID,
   DELEGATION_PROGRAM_ID,
 } from "./common";
@@ -95,15 +96,14 @@ export async function runProbe06(): Promise<Probe06Result> {
   let currentOwner = info?.owner.toBase58();
   if (currentOwner !== DELEGATION_PROGRAM_ID.toBase58()) {
     console.log("[step 2] Simulating rescue activation: Delegating position to DLP...");
-    await baseProgramAuthority.methods
-      .delegateProbe()
-      .accounts({
-        payer: authority.publicKey,
-        authority: authority.publicKey,
-        probe: probePda,
-        validator: TEE_VALIDATOR,
-      })
-      .rpc();
+    await delegateProbeRaw(
+      baseConn,
+      authority,
+      authority,
+      probePda,
+      TEE_VALIDATOR,
+      baseProgramAuthority
+    );
     await new Promise((r) => setTimeout(r, 2500));
     info = await baseConn.getAccountInfo(probePda);
     currentOwner = info?.owner.toBase58();

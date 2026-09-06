@@ -21,6 +21,7 @@ import {
   authorizeSigner,
   waitForProgramOwnership,
   TEE_VALIDATOR,
+  delegateProbeRaw,
   MAGIC_CONTEXT_ID,
   MAGIC_PROGRAM_ID,
   PROBE_PROGRAM_ID,
@@ -70,15 +71,14 @@ export async function runProbe02(): Promise<Probe02Result> {
 
   if (currentOwner !== DELEGATION_PROGRAM_ID.toBase58()) {
     console.log("[step 2] Delegating probe account to TEE validator...");
-    await baseProgram.methods
-      .delegateProbe()
-      .accounts({
-        payer: authority.publicKey,
-        authority: authority.publicKey,
-        probe: probePda,
-        validator: TEE_VALIDATOR,
-      })
-      .rpc();
+    await delegateProbeRaw(
+      baseConn,
+      authority,
+      authority,
+      probePda,
+      TEE_VALIDATOR,
+      baseProgram
+    );
     console.log("✅ Delegation transaction sent. Waiting 3s for ER propagation...");
     await new Promise((r) => setTimeout(r, 3000));
   }

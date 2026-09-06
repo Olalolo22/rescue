@@ -217,6 +217,67 @@ export function findPermissionPda(account: PublicKey): PublicKey {
 }
 
 // -----------------------------------------------------------------------------
+// Delegation Helper (bypasses Anchor IDL for #[delegate]-injected accounts)
+// The #[delegate] macro auto-injects these PDA accounts into DelegateProbe:
+//   buffer_probe       seeds=[b"buffer", probe]          program=PROBE_PROGRAM_ID
+//   delegation_record_probe  seeds=[b"delegation", probe]     program=DELEGATION_PROGRAM_ID
+//   delegation_metadata_probe seeds=[b"delegation-metadata", probe] program=DELEGATION_PROGRAM_ID
+//   owner_program      = PROBE_PROGRAM_ID
+//   delegation_program = DELEGATION_PROGRAM_ID
+//   system_program     = SystemProgram
+// -----------------------------------------------------------------------------
+
+export async function delegateProbeRaw(
+  connection: Connection,
+  payer: Keypair,
+  authority: Keypair,
+  probePda: PublicKey,
+  validator: PublicKey,
+  program: anchor.Program
+): Promise<string> {
+  const [bufferProbe] = PublicKey.findProgramAddressSync(
+    [Buffer.from("buffer"), probePda.toBuffer()],
+    PROBE_PROGRAM_ID
+  );
+  const [delegationRecordProbe] = PublicKey.findProgramAddressSync(
+    [Buffer.from("delegation"), probePda.toBuffer()],
+    DELEGATION_PROGRAM_ID
+  );
+  const [delegationMetadataProbe] = PublicKey.findProgramAddressSync(
+    [Buffer.from("delegation-metadata"), probePda.toBuffer()],
+    DELEGATION_PROGRAM_ID
+  );
+
+  const signers = [payer];
+  if (!payer.publicKey.equals(authority.publicKey)) {
+    signers.push(authority);
+  }
+
+  return program.methods
+    .delegateProbe()
+    .accounts({
+      payer: payer.publicKey,
+      authority: authority.publicKey,
+      bufferProbe,
+      delegationRecordProbe,
+      delegationMetadataProbe,
+      buffer_probe: bufferProbe,
+      delegation_record_probe: delegationRecordProbe,
+      delegation_metadata_probe: delegationMetadataProbe,
+      probe: probePda,
+      validator,
+      ownerProgram: PROBE_PROGRAM_ID,
+      owner_program: PROBE_PROGRAM_ID,
+      delegationProgram: DELEGATION_PROGRAM_ID,
+      delegation_program: DELEGATION_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      system_program: anchor.web3.SystemProgram.programId,
+    } as any)
+    .signers(signers)
+    .rpc();
+}
+
+// -----------------------------------------------------------------------------
 // Ownership Polling Helper (The Tenor-proven settlement pipe)
 // -----------------------------------------------------------------------------
 
@@ -295,8 +356,14 @@ export function getAnchorProgram(
         accounts: [
           { name: "payer", writable: true, signer: true, isMut: true, isSigner: true },
           { name: "authority", writable: false, signer: true, isMut: false, isSigner: true },
+          { name: "bufferProbe", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "delegationRecordProbe", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "delegationMetadataProbe", writable: true, signer: false, isMut: true, isSigner: false },
           { name: "probe", writable: true, signer: false, isMut: true, isSigner: false },
           { name: "validator", writable: false, signer: false, isMut: false, isSigner: false, optional: true, isOptional: true },
+          { name: "ownerProgram", writable: false, signer: false, isMut: false, isSigner: false },
+          { name: "delegationProgram", writable: false, signer: false, isMut: false, isSigner: false },
+          { name: "systemProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [],
       },

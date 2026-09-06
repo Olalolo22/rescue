@@ -28,6 +28,7 @@ import {
   findEphemeralPda,
   findProbePda,
   authorizeSigner,
+  delegateProbeRaw,
   TEE_VALIDATOR,
   DELEGATION_PROGRAM_ID,
 } from "./common";
@@ -87,15 +88,14 @@ export async function runProbe07(): Promise<Probe07Result> {
     .rpc();
 
   console.log("[step 0] Delegating probe account to anchor ER session...");
-  await baseProgram.methods
-    .delegateProbe()
-    .accounts({
-      payer: authority.publicKey,
-      authority: authority.publicKey,
-      probe: probePda,
-      validator: TEE_VALIDATOR,
-    })
-    .rpc();
+  await delegateProbeRaw(
+    baseConn,
+    authority,  // payer (fresh funded)
+    authority,  // authority
+    probePda,
+    TEE_VALIDATOR,
+    baseProgram
+  );
   console.log("✅ Probe delegated to TEE validator, waiting 2.5s for ER sync...");
   await new Promise((r) => setTimeout(r, 2500));
 

@@ -28,6 +28,7 @@ import {
   authorizeSigner,
   verifyTeeIdentity,
   TEE_VALIDATOR,
+  delegateProbeRaw,
   EPHEMERAL_VAULT_ID,
   MAGIC_PROGRAM_ID,
   PERMISSION_PROGRAM_ID,
@@ -119,15 +120,14 @@ export async function runProbe01(): Promise<Probe01Result> {
   if (currentOwner === PROBE_PROGRAM_ID.toBase58()) {
     console.log("[step 2] Delegating probe account to TEE validator...");
     try {
-      await baseProgram.methods
-        .delegateProbe()
-        .accounts({
-          payer: authority.publicKey,
-          authority: authority.publicKey,
-          probe: probePda,
-          validator: TEE_VALIDATOR,
-        })
-        .rpc();
+      await delegateProbeRaw(
+        baseConn,
+        authority,
+        authority,
+        probePda,
+        TEE_VALIDATOR,
+        baseProgram
+      );
       console.log("✅ ProbeAccount delegated to DLP");
       await new Promise((r) => setTimeout(r, 2500));
     } catch (e: any) {

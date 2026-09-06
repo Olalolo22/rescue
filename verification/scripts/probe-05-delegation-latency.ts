@@ -23,6 +23,7 @@ import {
   authorizeSigner,
   waitForProgramOwnership,
   TEE_VALIDATOR,
+  delegateProbeRaw,
   PROBE_PROGRAM_ID,
   DELEGATION_PROGRAM_ID,
   MAGIC_CONTEXT_ID,
@@ -93,15 +94,14 @@ export async function runProbe05(): Promise<Probe05Result> {
   const t0 = Date.now();
 
   // 2. Dispatch delegate transaction
-  const delegateTx = await baseProgram.methods
-    .delegateProbe()
-    .accounts({
-      payer: authority.publicKey,
-      authority: authority.publicKey,
-      probe: probePda,
-      validator: TEE_VALIDATOR,
-    })
-    .rpc({ commitment: "confirmed" });
+  const delegateTx = await delegateProbeRaw(
+    baseConn,
+    authority,
+    authority,
+    probePda,
+    TEE_VALIDATOR,
+    baseProgram
+  );
 
   const t1 = Date.now();
   const baseConfirmMs = t1 - t0;
