@@ -29,7 +29,7 @@ pub struct OpenPosition<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<OpenPosition>) -> Result<()> {
+pub fn open_position(ctx: Context<OpenPosition>) -> Result<()> {
     let position = &mut ctx.accounts.position;
     position.owner = ctx.accounts.owner.key();
     position.collateral_mint = ctx.accounts.collateral_mint.key();

@@ -27,7 +27,7 @@ pub struct FlagAtRisk<'info> {
     pub config: Account<'info, RescueConfigPDA>,
 }
 
-pub fn handler(ctx: Context<FlagAtRisk>, current_price: i64) -> Result<()> {
+pub fn flag_at_risk(ctx: Context<FlagAtRisk>, current_price: i64) -> Result<()> {
     let position = &mut ctx.accounts.position;
     let config = &ctx.accounts.config;
     let clock = Clock::get()?;

@@ -20,7 +20,7 @@ pub struct DepositCollateral<'info> {
     pub position: Account<'info, PositionPDA>,
 }
 
-pub fn handler(ctx: Context<DepositCollateral>, amount: u64) -> Result<()> {
+pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Result<()> {
     let position = &mut ctx.accounts.position;
 
     // Cannot deposit while position is actively delegated in TEE intervention

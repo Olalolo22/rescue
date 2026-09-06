@@ -33,7 +33,7 @@ pub mod rescue_protocol {
         liquidation_threshold_bps: u32,
         public_penalty_bps: u16,
     ) -> Result<()> {
-        instructions::init_config::handler(
+        instructions::init_config::init_config(
             ctx,
             reserve_spread_bps,
             bond_pct_bps,
@@ -64,7 +64,7 @@ pub mod rescue_protocol {
         liquidation_threshold_bps: Option<u32>,
         public_penalty_bps: Option<u16>,
     ) -> Result<()> {
-        instructions::update_config::handler(
+        instructions::update_config::update_config(
             ctx,
             reserve_spread_bps,
             bond_pct_bps,
@@ -82,31 +82,31 @@ pub mod rescue_protocol {
 
     /// Open a new lending position.
     pub fn open_position(ctx: Context<OpenPosition>) -> Result<()> {
-        instructions::open_position::handler(ctx)
+        instructions::open_position::open_position(ctx)
     }
 
     /// Deposit collateral into an active position.
     pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Result<()> {
-        instructions::deposit_collateral::handler(ctx, amount)
+        instructions::deposit_collateral::deposit_collateral(ctx, amount)
     }
 
     /// Borrow debt tokens against collateral.
     pub fn borrow(ctx: Context<Borrow>, amount: u64, current_price: i64) -> Result<()> {
-        instructions::borrow::handler(ctx, amount, current_price)
+        instructions::borrow::borrow(ctx, amount, current_price)
     }
 
     /// Flag a deteriorating position as AT_RISK.
     pub fn flag_at_risk(ctx: Context<FlagAtRisk>, current_price: i64) -> Result<()> {
-        instructions::flag_at_risk::handler(ctx, current_price)
+        instructions::flag_at_risk::flag_at_risk(ctx, current_price)
     }
 
     /// Initiate a rescue session and delegate PositionPDA to the MagicBlock TEE.
     pub fn initiate_rescue(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
-        instructions::initiate_rescue::handler(ctx, current_price)
+        instructions::initiate_rescue::initiate_rescue(ctx, current_price)
     }
 
     /// Standard public liquidation path (only callable when position is Liquidatable).
     pub fn liquidate(ctx: Context<Liquidate>, repay_debt_amount: u64, current_price: i64) -> Result<()> {
-        instructions::liquidate::handler(ctx, repay_debt_amount, current_price)
+        instructions::liquidate::liquidate(ctx, repay_debt_amount, current_price)
     }
 }

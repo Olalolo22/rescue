@@ -14,7 +14,7 @@ pub struct UpdateConfig<'info> {
     pub config: Account<'info, RescueConfigPDA>,
 }
 
-pub fn handler(
+pub fn update_config(
     ctx: Context<UpdateConfig>,
     reserve_spread_bps: Option<u16>,
     bond_pct_bps: Option<u16>,

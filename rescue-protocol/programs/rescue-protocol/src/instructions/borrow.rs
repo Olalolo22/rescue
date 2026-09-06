@@ -27,7 +27,7 @@ pub struct Borrow<'info> {
     pub config: Account<'info, RescueConfigPDA>,
 }
 
-pub fn handler(ctx: Context<Borrow>, amount: u64, current_price: i64) -> Result<()> {
+pub fn borrow(ctx: Context<Borrow>, amount: u64, current_price: i64) -> Result<()> {
     let position = &mut ctx.accounts.position;
     let config = &ctx.accounts.config;
 

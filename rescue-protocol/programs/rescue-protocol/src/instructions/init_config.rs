@@ -18,7 +18,7 @@ pub struct InitConfig<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
+pub fn init_config(
     ctx: Context<InitConfig>,
     reserve_spread_bps: u16,
     bond_pct_bps: u16,

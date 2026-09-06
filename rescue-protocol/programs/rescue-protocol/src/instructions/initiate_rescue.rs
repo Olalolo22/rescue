@@ -50,7 +50,7 @@ pub struct InitiateRescue<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
+pub fn initiate_rescue(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
     let clock = Clock::get()?;
 
     // Invariant I5 & State Check: Must be in AtRisk state

@@ -26,7 +26,7 @@ pub struct Liquidate<'info> {
     pub config: Account<'info, RescueConfigPDA>,
 }
 
-pub fn handler(ctx: Context<Liquidate>, repay_debt_amount: u64, current_price: i64) -> Result<()> {
+pub fn liquidate(ctx: Context<Liquidate>, repay_debt_amount: u64, current_price: i64) -> Result<()> {
     let position = &mut ctx.accounts.position;
     let config = &ctx.accounts.config;
 
