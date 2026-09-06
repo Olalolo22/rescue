@@ -6,23 +6,22 @@ use anchor_lang::prelude::*;
 ///   I5: Once Liquidatable, state never reverts.
 ///   I6: Rescued → cannot re-enter InInterventionZone for COOLDOWN_SLOTS.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(u8)]
 pub enum PositionState {
     /// Health factor above the AT_RISK threshold.
-    Healthy = 0,
+    Healthy,
     /// Health factor has crossed the AT_RISK threshold. Rescue keeper may now
     /// call `initiate_rescue`. Public liquidation is NOT yet permitted.
-    AtRisk = 1,
+    AtRisk,
     /// PositionPDA is delegated to the MagicBlock TEE.
     /// Public liquidation blocked via Error 3007 (AccountOwnedByWrongProgram).
     /// [VERIFIED: Probe 03 & 06]
-    InInterventionZone = 2,
+    InInterventionZone,
     /// Rescue succeeded. Position is back on L1 and healthy (HF ≥ HF_TARGET).
-    Rescued = 3,
+    Rescued,
     /// Rescue window timed out without settlement, or position health
     /// deteriorated past the close-factor abort threshold.
     /// Public liquidation is now permitted. Terminal — cannot leave this state.
-    Liquidatable = 4,
+    Liquidatable,
 }
 
 impl PositionState {
@@ -81,7 +80,7 @@ impl PositionPDA {
         + 8                          // collateral_amount
         + 8                          // debt_amount
         + 8                          // price_at_flag
-        + 1                          // state (u8)
+        + 1                          // state (enum tag)
         + 8                          // last_rescued_slot
         + 32                         // active_session
         + 2                          // rescue_count

@@ -2,18 +2,17 @@ use anchor_lang::prelude::*;
 
 /// Lifecycle of a rescue auction session.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(u8)]
 pub enum SessionState {
     /// Sealed-bid auction is live on the TEE.
-    AuctionOpen = 0,
+    AuctionOpen,
     /// Bidding closed; lowest valid penalty selected. Waiting for L1 settlement.
-    Matched = 1,
+    Matched,
     /// Winner (or runner-up) successfully executed flash repay on L1. Complete.
-    Settled = 2,
+    Settled,
     /// Auction closed with no bids below P_reserve, or settlement failed.
-    TimedOut = 3,
+    TimedOut,
     /// Eviction triggered via L1 fallback. Position unlocked to Liquidatable.
-    Evicted = 4,
+    Evicted,
 }
 
 /// Rescue auction session coordinating TEE bidding and L1 atomic settlement.
@@ -82,7 +81,7 @@ impl RescueSessionPDA {
     pub const SPACE: usize = 8      // discriminator
         + 32                         // position
         + 2                          // rescue_index
-        + 1                          // state (u8)
+        + 1                          // state (enum tag)
         + 8                          // start_slot
         + 8                          // auction_end_slot
         + 8                          // winner_settlement_deadline

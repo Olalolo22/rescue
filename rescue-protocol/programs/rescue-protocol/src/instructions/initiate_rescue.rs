@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
+use ephemeral_rollups_sdk::anchor::delegate;
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
-use ephemeral_rollups_sdk::ephemeral_accounts::delegate;
 
 use crate::errors::RescueError;
 use crate::math::{compute_r_min, compute_required_bond};
@@ -51,15 +51,15 @@ pub struct InitiateRescue<'info> {
 }
 
 pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
-    let position = &mut ctx.accounts.position;
-    let config = &ctx.accounts.config;
     let clock = Clock::get()?;
 
     // Invariant I5 & State Check: Must be in AtRisk state
     require!(
-        position.state == PositionState::AtRisk,
+        ctx.accounts.position.state == PositionState::AtRisk,
         RescueError::PositionNotAtRisk
     );
+
+    let config = &ctx.accounts.config;
 
     // Invariant I1: Non-worseness reserve penalty calculation
     // P_reserve = P_public - reserve_spread_bps
@@ -71,8 +71,8 @@ pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
 
     // Invariant I2: Minimal Right-Sizing closed form R_min
     let r_min = compute_r_min(
-        position.collateral_amount,
-        position.debt_amount,
+        ctx.accounts.position.collateral_amount,
+        ctx.accounts.position.debt_amount,
         current_price,
         config.liquidation_threshold_bps,
         config.target_hf_bps,
@@ -104,8 +104,8 @@ pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
 
     // Initialize RescueSessionPDA
     let session = &mut ctx.accounts.session;
-    session.position = position.key();
-    session.rescue_index = position.rescue_count;
+    session.position = ctx.accounts.position.key();
+    session.rescue_index = ctx.accounts.position.rescue_count;
     session.state = SessionState::AuctionOpen;
     session.start_slot = start_slot;
     session.auction_end_slot = auction_end_slot;
@@ -122,17 +122,22 @@ pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
     session.runner_up_penalty_bps = 0;
     session.bump = ctx.bumps.session;
 
-    // Update Position state and session pointer
-    position.state = PositionState::InInterventionZone;
-    position.active_session = session.key();
+    let session_key = session.key();
 
-    // Invariant I10: Delegate PositionPDA to MagicBlock TEE validator
-    // Base layer mutation/liquidation is now locked with Error 3007
+    // Update Position state and session pointer
+    let position = &mut ctx.accounts.position;
+    position.state = PositionState::InInterventionZone;
+    position.active_session = session_key;
+
+    // Extract PDA seeds and bump before CPI delegation
     let owner_key = position.owner;
     let collateral_mint_key = position.collateral_mint;
     let debt_mint_key = position.debt_mint;
+    let position_bump = position.bump;
     let validator = ctx.accounts.validator.as_ref().map(|v| v.key());
 
+    // Invariant I10: Delegate PositionPDA to MagicBlock TEE validator
+    // Base layer mutation/liquidation is now locked with Error 3007
     ctx.accounts.delegate_position(
         &ctx.accounts.payer,
         &[
@@ -140,6 +145,7 @@ pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
             owner_key.as_ref(),
             collateral_mint_key.as_ref(),
             debt_mint_key.as_ref(),
+            &[position_bump],
         ],
         DelegateConfig {
             validator,
@@ -149,7 +155,7 @@ pub fn handler(ctx: Context<InitiateRescue>, current_price: i64) -> Result<()> {
 
     msg!(
         "Rescue initiated! Session: {}, R_min: {}, P_reserve: {} bps, Cutoff slot: {}",
-        session.key(),
+        session_key,
         r_min,
         p_reserve_bps,
         hard_cutoff_slot
