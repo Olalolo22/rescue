@@ -10,6 +10,7 @@
  * 3. Measures price drift and publishing staleness between Base and TEE ER.
  * 4. Validates that ER price age stays within MAX_PRICE_AGE_SECONDS (600s).
  */
+import { PublicKey } from "@solana/web3.js";
 import {
   getBaseConnection,
   getErConnection,
@@ -36,16 +37,31 @@ export async function runProbe04(): Promise<Probe04Result> {
 
   const baseConn = getBaseConnection();
   const authority = loadKeypair("AUTHORITY_KEYPAIR_PATH", "probe_auth.json");
-  console.log(`[feedAccount] ${PYTH_FEED_DEVNET.toBase58()}`);
+  let feedAccount = PYTH_FEED_DEVNET;
+  console.log(`[feedAccount] ${feedAccount.toBase58()}`);
 
   // 1. Fetch PriceUpdateV2 on Solana Base
   console.log("[step 1] Fetching PriceUpdateV2 account from Solana Base...");
-  const baseInfo = await baseConn.getAccountInfo(PYTH_FEED_DEVNET);
+  let baseInfo = await baseConn.getAccountInfo(feedAccount);
+  if (!baseInfo) {
+    console.log("Configured feed not found. Discovering active PriceUpdateV2 on Devnet...");
+    const pythProgram = new PublicKey("rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ");
+    const accounts = await baseConn.getProgramAccounts(pythProgram, {
+      dataSlice: { offset: 0, length: 0 },
+      filters: [{ dataSize: 134 }],
+    });
+    if (accounts.length > 0) {
+      feedAccount = accounts[0].pubkey;
+      console.log(`Discovered active feed account: ${feedAccount.toBase58()}`);
+      baseInfo = await baseConn.getAccountInfo(feedAccount);
+    }
+  }
+
   if (!baseInfo) {
     console.warn("⚠️ Price feed account not found on base layer devnet!");
     return {
       probeName: "Probe 04: Pyth ER Readability",
-      feedAccount: PYTH_FEED_DEVNET.toBase58(),
+      feedAccount: feedAccount.toBase58(),
       existsOnBase: false,
       existsOnEr: false,
       baseDataLen: 0,

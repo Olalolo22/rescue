@@ -54,7 +54,7 @@ export const PROBE_PROGRAM_ID = new PublicKey(
 
 export const PYTH_FEED_DEVNET = new PublicKey(
   process.env.PYTH_PRICE_FEED_ACCOUNT ||
-    "7UVimffxr9ow1ukKttssstvBiapRmncnxWuBkfm3mc9Y"
+    "1121JSUgoCT514dycHuZRjPdDnXd1gvQ3wCixt8on1m"
 );
 
 export {
