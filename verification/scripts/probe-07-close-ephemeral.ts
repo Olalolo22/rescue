@@ -99,7 +99,7 @@ export async function runProbe07(): Promise<Probe07Result> {
       .remainingAccounts([
         { pubkey: probePda, isWritable: true, isSigner: false },
       ])
-      .rpc();
+      .rpc({ skipPreflight: true });
     console.log(`✅ Ephemeral item created on ER. tx: ${tx}`);
   } catch (e: any) {
     console.error("❌ Failed to create ephemeral item on ER:", e.message || e);
@@ -138,7 +138,7 @@ export async function runProbe07(): Promise<Probe07Result> {
       .remainingAccounts([
         { pubkey: probePda, isWritable: true, isSigner: false },
       ])
-      .rpc();
+      .rpc({ skipPreflight: true });
     console.log(`✅ Ephemeral item closed on ER. tx: ${closeTx}`);
   } catch (e: any) {
     console.error("❌ Failed to close ephemeral item on ER:", e.message || e);
