@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
+use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral, ephemeral_accounts};
 use ephemeral_rollups_sdk::access_control::{
     instructions::CreateEphemeralPermissionCpi,
     structs::{
@@ -189,10 +189,22 @@ pub mod probe {
     /// 8. Create an ephemeral account directly on ER (no base footprint).
     /// Used for Probe 7: Testing ephemeral account lifecycle.
     pub fn create_ephemeral_item(ctx: Context<CreateEphemeralItem>, data: u64) -> Result<()> {
-        let item = &mut ctx.accounts.item;
-        item.authority = ctx.accounts.authority.key();
-        item.data = data;
-        item.bump = ctx.bumps.item;
+        ctx.accounts
+            .create_ephemeral_item(EphemeralItemAccount::LEN as u32)?;
+
+        let (_, bump) = Pubkey::find_program_address(
+            &[EPHEMERAL_SEED, ctx.accounts.authority.key().as_ref()],
+            &crate::id(),
+        );
+
+        let item = EphemeralItemAccount {
+            authority: ctx.accounts.authority.key(),
+            data,
+            bump,
+        };
+        let mut account_data = ctx.accounts.item.try_borrow_mut_data()?;
+        let mut writer = &mut account_data[..];
+        item.try_serialize(&mut writer)?;
         msg!("Ephemeral item created on ER: data={}", data);
         Ok(())
     }
@@ -200,6 +212,7 @@ pub mod probe {
     /// 9. Close an ephemeral account on ER.
     /// Used for Probe 7: Verifying complete cleanup on ER with 0 trace on L1.
     pub fn close_ephemeral_item(ctx: Context<CloseEphemeralItem>) -> Result<()> {
+        ctx.accounts.close_ephemeral_item()?;
         msg!(
             "Ephemeral item closed on ER. Rent refunded to {}",
             ctx.accounts.authority.key()
@@ -348,30 +361,32 @@ pub struct UndelegateProbe<'info> {
     pub magic_program: UncheckedAccount<'info>,
 }
 
+#[ephemeral_accounts]
 #[derive(Accounts)]
 pub struct CreateEphemeralItem<'info> {
-    #[account(mut)]
+    #[account(mut, sponsor)]
     pub authority: Signer<'info>,
+    /// CHECK: Ephemeral item PDA created on ER
     #[account(
-        init,
-        payer = authority,
-        space = EphemeralItemAccount::LEN,
+        mut,
+        eph,
         seeds = [EPHEMERAL_SEED, authority.key().as_ref()],
         bump
     )]
-    pub item: Account<'info, EphemeralItemAccount>,
-    pub system_program: Program<'info, System>,
+    pub item: UncheckedAccount<'info>,
 }
 
+#[ephemeral_accounts]
 #[derive(Accounts)]
 pub struct CloseEphemeralItem<'info> {
-    #[account(mut)]
+    #[account(mut, sponsor)]
     pub authority: Signer<'info>,
+    /// CHECK: Ephemeral item PDA closed on ER
     #[account(
         mut,
-        close = authority,
+        eph,
         seeds = [EPHEMERAL_SEED, authority.key().as_ref()],
-        bump = item.bump
+        bump
     )]
-    pub item: Account<'info, EphemeralItemAccount>,
+    pub item: UncheckedAccount<'info>,
 }

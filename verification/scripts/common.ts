@@ -496,7 +496,8 @@ export function getAnchorProgram(
         accounts: [
           { name: "authority", writable: true, signer: true, isMut: true, isSigner: true },
           { name: "item", writable: true, signer: false, isMut: true, isSigner: false },
-          { name: "systemProgram", writable: false, signer: false, isMut: false, isSigner: false },
+          { name: "vault", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "magicProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [{ name: "data", type: "u64" }],
       },
@@ -506,6 +507,8 @@ export function getAnchorProgram(
         accounts: [
           { name: "authority", writable: true, signer: true, isMut: true, isSigner: true },
           { name: "item", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "vault", writable: true, signer: false, isMut: true, isSigner: false },
+          { name: "magicProgram", writable: false, signer: false, isMut: false, isSigner: false },
         ],
         args: [],
       },

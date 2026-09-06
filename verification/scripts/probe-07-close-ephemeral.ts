@@ -32,6 +32,8 @@ import {
   delegateAccountRaw,
   TEE_VALIDATOR,
   DELEGATION_PROGRAM_ID,
+  EPHEMERAL_VAULT_ID,
+  MAGIC_PROGRAM_ID,
 } from "./common";
 
 export interface Probe07Result {
@@ -123,8 +125,9 @@ export async function runProbe07(): Promise<Probe07Result> {
       .accounts({
         authority: authority.publicKey,
         item: itemPda,
-        systemProgram: SystemProgram.programId,
-      })
+        vault: EPHEMERAL_VAULT_ID,
+        magicProgram: MAGIC_PROGRAM_ID,
+      } as any)
       .remainingAccounts([
         { pubkey: probePda, isWritable: true, isSigner: false },
       ])
@@ -164,7 +167,9 @@ export async function runProbe07(): Promise<Probe07Result> {
       .accounts({
         authority: authority.publicKey,
         item: itemPda,
-      })
+        vault: EPHEMERAL_VAULT_ID,
+        magicProgram: MAGIC_PROGRAM_ID,
+      } as any)
       .remainingAccounts([
         { pubkey: probePda, isWritable: true, isSigner: false },
       ])
